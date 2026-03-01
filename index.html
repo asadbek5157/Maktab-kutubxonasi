@@ -1,1 +1,265 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>56-Maktab Kutubxonasi</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:0; background: linear-gradient(135deg, #f3f4f6, #e2e8f0); }
+  header { background:#1e3a8a; color:white; padding:30px 10px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.2);}
+  h1 { margin:0; font-size:32px; font-weight:700; }
 
+  .controls { display:flex; flex-wrap:wrap; gap:15px; padding:25px; justify-content:center; }
+  input, select, button { padding:12px; font-size:15px; border-radius:8px; border:1px solid #ccc; transition: all 0.3s ease;}
+  input:focus, select:focus { border-color:#1e3a8a; outline:none; }
+  button { cursor:pointer; background:#3b82f6; color:white; border:none; }
+  button:hover { background:#2563eb; transform:scale(1.05); }
+
+  .book-list { display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:25px; padding:20px; }
+  .book { background:white; border-radius:12px; padding:15px; box-shadow:0 6px 20px rgba(0,0,0,0.1); display:flex; flex-direction:column; justify-content:space-between; transition: transform 0.3s ease, box-shadow 0.3s ease;}
+  .book:hover { transform: translateY(-5px); box-shadow:0 12px 25px rgba(0,0,0,0.2); }
+  .book img { width:100%; border-radius:10px; margin-bottom:12px; object-fit:cover; height:180px; cursor:pointer; }
+  .book h3 { margin:0 0 10px; font-size:18px; color:#111827; }
+  .book p { margin:3px 0; font-size:14px; color:#4b5563; }
+
+  #addBookForm { text-align:center; padding:20px; display:none; background:white; margin:20px auto; border-radius:12px; width:90%; max-width:400px; box-shadow:0 6px 20px rgba(0,0,0,0.1); }
+  #addBookForm input, #addBookForm select { margin:5px 0; width:90%; padding:10px; border-radius:8px; }
+
+  .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:10; overflow:auto; }
+  .modal-content { background:white; padding:20px; border-radius:12px; max-width:600px; width:90%; text-align:center; position:relative; }
+  .modal-content img { width:40%; height:auto; margin-bottom:15px; border-radius:10px; }
+  .close-btn { position:absolute; top:10px; right:15px; cursor:pointer; font-size:20px; color:#555; }
+
+  .stars { display:flex; justify-content:center; margin:5px 0; }
+  .stars span { font-size:24px; cursor:pointer; color:#ccc; transition:0.3s; }
+  .stars span:hover, .stars span.active { color: gold; }
+
+  .comment-section { text-align:left; margin-top:15px; max-height:200px; overflow-y:auto; }
+  .comment { border-top:1px solid #eee; padding:5px 0; font-size:14px; }
+  .comment strong { color:#1e3a8a; }
+
+  #loginPrompt { display:none; text-align:center; margin:20px auto; padding:20px; background:white; border-radius:12px; width:90%; max-width:400px; box-shadow:0 6px 20px rgba(0,0,0,0.1);}
+  #loginPrompt input { width:90%; margin:5px 0; padding:10px; border-radius:8px; border:1px solid #ccc; }
+
+  @media(max-width:600px){
+    .book-list { grid-template-columns: repeat(2,1fr); gap:15px; }
+    .book img { height:150px; }
+    .controls { flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>56-MAKTAB KUTUBXONASIGA <br> XUSH KELIBSIZ</h1>
+</header>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Kitob nomi qidirish...">
+  <select id="category">
+    <option value="all">Barchasi</option>
+    <option value="badiiy">Badiiy adabiyot</option>
+    <option value="ilmiy">Ilmiy adabiyot</option>
+    <option value="jinoyat">Jinoyat kodeksi</option>
+    <option value="ma’muriy">Ma’muriy kodeksi</option>
+    <option value="konstitutsiya">Konstitutsiya</option>
+    <option value="oila">Oila kodeksi</option>
+    <option value="bolalar">Bolalar adabiyoti</option>
+  </select>
+  <button onclick="searchBook()">Qidirish</button>
+  <button id="addBookBtn" onclick="promptLoginForAdd()">Kitob Qo'shish</button>
+</div>
+
+<div class="book-list" id="bookList">
+  <p style="text-align:center; color:#555;">Hozircha kitoblar mavjud emas.</p>
+</div>
+
+<!-- Login prompt -->
+<div id="loginPrompt">
+  <h3>Admin Login</h3>
+  <input type="text" id="adminUser" placeholder="Login">
+  <input type="password" id="adminPass" placeholder="Parol">
+  <button onclick="adminLogin()">Kirish</button>
+  <button onclick="hideLoginPrompt()">Bekor qilish</button>
+</div>
+
+<!-- Add Book Form -->
+<div id="addBookForm">
+  <input type="text" id="newTitle" placeholder="Kitob nomi">
+  <input type="text" id="newAuthor" placeholder="Muallif">
+  <input type="number" id="newYear" placeholder="Yil">
+  <select id="newCategory">
+    <option value="badiiy">Badiiy adabiyot</option>
+    <option value="ilmiy">Ilmiy adabiyot</option>
+    <option value="jinoyat">Jinoyat kodeksi</option>
+    <option value="ma’muriy">Ma’muriy kodeksi</option>
+    <option value="konstitutsiya">Konstitutsiya</option>
+    <option value="oila">Oila kodeksi</option>
+    <option value="bolalar">Bolalar adabiyoti</option>
+  </select>
+  <input type="text" id="newFile" placeholder="PDF fayl linki">
+  <input type="text" id="newImage" placeholder="Rasm fayl linki">
+  <button onclick="addBook()">Qo'shish</button>
+  <button onclick="hideAddBook()">Bekor qilish</button>
+</div>
+
+<!-- Modal for book details -->
+<div class="modal" id="bookModal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <img id="modalImg" src="" alt="">
+    <h2 id="modalTitle"></h2>
+    <p id="modalAuthor"></p>
+    <p id="modalYear"></p>
+    <p id="modalCategory"></p>
+    <div class="stars" id="starRating"></div>
+    <textarea id="commentInput" placeholder="Sharh qoldiring..." style="width:90%; padding:10px; border-radius:8px; margin-top:10px;"></textarea>
+    <button onclick="addComment()">Sharh Qo'shish</button>
+    <div class="comment-section" id="commentSection"></div>
+    <button id="modalReadBtn" style="margin-top:15px;">O'qish</button>
+  </div>
+</div>
+
+<script>
+// Admin credentials
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "1234";
+let isAdmin = false;
+
+// Load books from localStorage
+let books = JSON.parse(localStorage.getItem('books')) || [];
+
+// Save books to localStorage
+function saveBooks(){ localStorage.setItem('books', JSON.stringify(books)); }
+
+// Display books
+function displayBooks(list){
+  const container = document.getElementById('bookList');
+  container.innerHTML = '';
+  if(list.length===0){ 
+    container.innerHTML='<p style="text-align:center; color:#555;">Hozircha kitoblar mavjud emas.</p>'; 
+    return; 
+  }
+  list.forEach((book,index)=>{
+    const div = document.createElement('div');
+    div.className='book';
+    let stars = '';
+    for(let i=1;i<=5;i++){ stars += i<=book.rating ? '★' : '☆'; }
+    div.innerHTML = `<img src="${book.image}" alt="${book.title}" onclick="openModal(${index})">
+                     <h3>${book.title}</h3>
+                     <p>Muallif: ${book.author}</p>
+                     <p>Yil: ${book.year}</p>
+                     <p>Kategoriya: ${book.category}</p>
+                     <p style="color:gold;">${stars}</p>`;
+    container.appendChild(div);
+  });
+}
+
+displayBooks(books);
+
+// Search function
+function searchBook(){
+  const query=document.getElementById('search').value.toLowerCase();
+  const cat=document.getElementById('category').value;
+  let filtered=books.filter(b=>b.title.toLowerCase().includes(query));
+  if(cat!=='all') filtered=filtered.filter(b=>b.category===cat);
+  displayBooks(filtered);
+}
+
+// Modal
+let currentBookIndex = null;
+function openModal(index){
+  currentBookIndex = index;
+  const modal = document.getElementById('bookModal');
+  const book = books[index];
+  document.getElementById('modalImg').src = book.image;
+  document.getElementById('modalTitle').innerText = book.title;
+  document.getElementById('modalAuthor').innerText = "Muallif: " + book.author;
+  document.getElementById('modalYear').innerText = "Yil: " + book.year;
+  document.getElementById('modalCategory').innerText = "Kategoriya: " + book.category;
+  document.getElementById('modalReadBtn').onclick = ()=>window.open(book.file,"_blank");
+
+  const starContainer = document.getElementById('starRating');
+  starContainer.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const star = document.createElement('span');
+    star.innerHTML = '★';
+    star.className = i<=book.rating ? 'active':'';
+    star.onclick = ()=> { books[index].rating = i; saveBooks(); displayBooks(books); openModal(index); }
+    starContainer.appendChild(star);
+  }
+
+  const commentSection = document.getElementById('commentSection');
+  commentSection.innerHTML='';
+  book.comments.forEach(c=>{
+    const div = document.createElement('div');
+    div.className='comment';
+    div.innerHTML=`<strong>${c.user}:</strong> ${c.text}`;
+    commentSection.appendChild(div);
+  });
+
+  document.getElementById('commentInput').value='';
+  modal.style.display='flex';
+}
+
+function closeModal(){ document.getElementById('bookModal').style.display='none'; }
+window.onclick = function(e){ if(e.target==document.getElementById('bookModal')) closeModal(); }
+
+function addComment(){
+  const text = document.getElementById('commentInput').value.trim();
+  if(text && currentBookIndex !== null){
+    books[currentBookIndex].comments.push({user:'Foydalanuvchi', text});
+    saveBooks();
+    openModal(currentBookIndex);
+  }
+}
+
+// Show login prompt only when adding book
+function promptLoginForAdd(){
+  if(!isAdmin){
+    document.getElementById('loginPrompt').style.display='block';
+  } else {
+    showAddBook();
+  }
+}
+
+function hideLoginPrompt(){ document.getElementById('loginPrompt').style.display='none'; }
+
+// Admin login
+function adminLogin(){
+  const user=document.getElementById('adminUser').value;
+  const pass=document.getElementById('adminPass').value;
+  if(user===ADMIN_USER && pass===ADMIN_PASS){
+    isAdmin = true;
+    hideLoginPrompt();
+    showAddBook();
+  } else {
+    alert("Login yoki parol xato!");
+  }
+}
+
+// Show/Hide Add Book form
+function showAddBook(){ document.getElementById('addBookForm').style.display='block'; }
+function hideAddBook(){ document.getElementById('addBookForm').style.display='none'; }
+
+// Add book
+function addBook(){
+  const title=document.getElementById('newTitle').value;
+  const author=document.getElementById('newAuthor').value;
+  const year=document.getElementById('newYear').value;
+  const category=document.getElementById('newCategory').value;
+  const file=document.getElementById('newFile').value;
+  const image=document.getElementById('newImage').value;
+  if(title && author && year && file && image){
+    books.push({title,author,year:parseInt(year),category,file,image,rating:0,comments:[]});
+    saveBooks();
+    displayBooks(books);
+    document.getElementById('newTitle').value=''; document.getElementById('newAuthor').value='';
+    document.getElementById('newYear').value=''; document.getElementById('newFile').value='';
+    document.getElementById('newImage').value=''; hideAddBook();
+  }else alert('Iltimos, barcha maydonlarni to‘ldiring!');
+}
+</script>
+
+</body>
+</html>
